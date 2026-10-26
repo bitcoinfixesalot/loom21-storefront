@@ -1,0 +1,179 @@
+<div class="container section checkout">
+  <h1>{{ 'checkout.title' | t }}</h1>
+
+  @if (checkoutStore.checkout(); as open) {
+    <p class="notice" role="status">
+      {{ 'checkout.resume' | t }}
+      <a routerLink="/checkout/pay" data-testid="resume">{{ 'checkout.resumeButton' | t }}</a>
+    </p>
+  }
+
+  @if (cart.items().length === 0) {
+    <p class="muted">{{ 'cart.empty' | t }}</p>
+    <a class="button" routerLink="/">{{ 'cart.continue' | t }}</a>
+  } @else {
+    <form class="checkout__layout" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <div class="checkout__form">
+        <fieldset>
+          <legend>{{ 'checkout.contact' | t }}</legend>
+          <label class="field">
+            <span>{{ 'checkout.email' | t }} *</span>
+            <input
+              type="email"
+              formControlName="email"
+              autocomplete="email"
+              required
+              data-testid="email"
+              [attr.aria-invalid]="invalid('email')"
+              aria-describedby="email-hint"
+            />
+            <small id="email-hint" class="muted">{{ 'checkout.emailHint' | t }}</small>
+            @if (invalid('email')) {
+              <small class="field__error">{{
+                (form.controls.email.hasError('required') ? 'checkout.required' : 'checkout.invalidEmail') | t
+              }}</small>
+            }
+          </label>
+          <label class="field">
+            <span>{{ 'checkout.name' | t }}</span>
+            <input type="text" formControlName="name" autocomplete="name" data-testid="name" />
+          </label>
+          <label class="field">
+            <span>{{ 'checkout.phone' | t }}</span>
+            <input type="tel" formControlName="phone" autocomplete="tel" />
+          </label>
+        </fieldset>
+
+        @if (shippingMethods().length) {
+          <fieldset data-testid="shipping">
+            <legend>{{ 'checkout.delivery' | t }} *</legend>
+            @for (m of shippingMethods(); track m.id) {
+              <label class="choice">
+                <input type="radio" formControlName="shippingMethodId" [value]="m.id" [attr.data-testid]="'shipping-' + m.id" />
+                <span>{{ m.name }}</span>
+                <span class="choice__price">{{ m.price > 0 ? config.amount(m.price) : '' }}</span>
+              </label>
+            }
+            @if (invalid('shippingMethodId')) {
+              <small class="field__error">{{ 'checkout.required' | t }}</small>
+            }
+          </fieldset>
+        }
+
+        @if (needsAddress()) {
+          <fieldset data-testid="address">
+            <legend>{{ 'checkout.address' | t }}</legend>
+            <label class="field">
+              <span>{{ 'checkout.line1' | t }} *</span>
+              <input type="text" formControlName="line1" autocomplete="address-line1" [attr.aria-invalid]="invalid('line1')" />
+              @if (invalid('line1')) {
+                <small class="field__error">{{ 'checkout.required' | t }}</small>
+              }
+            </label>
+            <label class="field">
+              <span>{{ 'checkout.line2' | t }}</span>
+              <input type="text" formControlName="line2" autocomplete="address-line2" />
+            </label>
+            <div class="row">
+              <label class="field">
+                <span>{{ 'checkout.postcode' | t }}</span>
+                <input type="text" formControlName="postcode" autocomplete="postal-code" />
+              </label>
+              <label class="field">
+                <span>{{ 'checkout.city' | t }} *</span>
+                <input type="text" formControlName="city" autocomplete="address-level2" [attr.aria-invalid]="invalid('city')" />
+                @if (invalid('city')) {
+                  <small class="field__error">{{ 'checkout.required' | t }}</small>
+                }
+              </label>
+            </div>
+            <label class="field">
+              <span>{{ 'checkout.region' | t }}</span>
+              <input type="text" formControlName="region" autocomplete="address-level1" />
+            </label>
+            <label class="field">
+              <span>{{ 'checkout.country' | t }} *</span>
+              <select formControlName="country" autocomplete="country" [attr.aria-invalid]="invalid('country')">
+                <option value=""></option>
+                @for (c of countries; track c.code) {
+                  <option [value]="c.code">{{ c.name }}</option>
+                }
+              </select>
+              @if (invalid('country')) {
+                <small class="field__error">{{ 'checkout.required' | t }}</small>
+              }
+            </label>
+          </fieldset>
+        }
+
+        <label class="field">
+          <span>{{ 'checkout.note' | t }}</span>
+          <textarea formControlName="note" rows="2" maxlength="1000"></textarea>
+        </label>
+
+        <fieldset data-testid="methods">
+          <legend>{{ 'checkout.payWith' | t }}</legend>
+          @for (m of methods(); track m) {
+            <label class="choice">
+              <input type="radio" formControlName="method" [value]="m" [attr.data-testid]="'method-' + m" />
+              <span>{{ 'checkout.method.' + m | t }}</span>
+            </label>
+          }
+        </fieldset>
+      </div>
+
+      <aside class="checkout__summary">
+        <h2 class="section__title">{{ 'checkout.summary' | t }}</h2>
+        @if (quote(); as q) {
+          <ul class="summary-lines">
+            @for (line of q.lines; track line.productId) {
+              <li>
+                <span>{{ line.quantity }} × {{ line.name }}</span
+                ><span>{{ config.amount(line.lineTotal) }}</span>
+              </li>
+            }
+          </ul>
+          <dl class="totals">
+            <dt>{{ 'cart.subtotal' | t }}</dt>
+            <dd>{{ config.amount(q.subtotal) }}</dd>
+            @if (q.shipping > 0) {
+              <dt>{{ 'cart.shipping' | t }}</dt>
+              <dd>{{ config.amount(q.shipping) }}</dd>
+            }
+            @if (q.vat.amount > 0) {
+              <dt>{{ 'cart.vat' | t: { rate: q.vat.rate } }}</dt>
+              <dd>{{ config.amount(q.vat.amount) }}</dd>
+            }
+            <dt class="totals__total">{{ 'cart.total' | t }}</dt>
+            <dd class="totals__total" data-testid="checkout-total">{{ config.amount(q.total, q.totalSats) }}</dd>
+          </dl>
+        }
+        @if (error()) {
+          <p class="notice notice--error" role="alert" data-testid="checkout-error">{{ error() }}</p>
+        }
+        @if (!config.canOrder()) {
+          <p class="notice">{{ 'store.checkoutUnavailable' | t }}</p>
+        }
+        @if (termsPage()) {
+          <p class="small muted">
+            {{ 'checkout.termsBefore' | t }} <a routerLink="/pages/terms" target="_blank">{{ 'checkout.termsLink' | t }}</a
+            >{{ 'checkout.termsAfter' | t }}
+          </p>
+        }
+        <button
+          type="submit"
+          class="button button--primary button--wide"
+          [disabled]="busy() || !config.canOrder() || !methods().length"
+          data-testid="pay"
+        >
+          @if (busy()) {
+            {{ 'checkout.creating' | t }}
+          } @else {
+            {{ 'checkout.pay' | t: { amount: quote() ? config.amount(quote()!.total) : '' } }}
+          }
+        </button>
+        <a routerLink="/cart" class="back-link">← {{ 'checkout.backToCart' | t }}</a>
+      </aside>
+    </form>
+  }
+</div>

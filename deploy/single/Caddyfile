@@ -1,0 +1,5 @@
+# Single mode: your store's domain. Caddy gets and renews its certificate by itself.
+shop.example.com {
+	encode zstd gzip
+	reverse_proxy storefront:4000
+}

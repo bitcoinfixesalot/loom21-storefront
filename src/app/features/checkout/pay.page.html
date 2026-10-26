@@ -1,0 +1,107 @@
+<div class="container section pay">
+  <h1>{{ 'pay.title' | t }}</h1>
+
+  @if (ended(); as end) {
+    <div class="pay__end" data-testid="pay-ended">
+      <h2>{{ (end.status === 'expired' ? 'pay.expiredTitle' : 'pay.cancelledTitle') | t }}</h2>
+      @if (end.status === 'expired') {
+        <p>{{ 'pay.expiredText' | t }}</p>
+      }
+      <a class="button button--primary" routerLink="/cart">{{ 'pay.startAgain' | t }}</a>
+    </div>
+  } @else if (checkout(); as c) {
+    <p class="pay__amount">
+      <span class="muted">{{ 'pay.amount' | t }}</span>
+      <strong data-testid="pay-total">{{ config.amount(c.total) }}</strong>
+      @if (sats()) {
+        <span class="muted">· {{ sats() }}</span>
+      }
+    </p>
+
+    @if (error()) {
+      <p class="notice notice--error" role="alert">{{ error() }}</p>
+    }
+
+    @if (payment(); as p) {
+      @if (p.method === 'lightning' && p.bolt11) {
+        <div class="pay__box" data-testid="lightning">
+          <p>{{ 'pay.scan' | t }}</p>
+          <app-qr [text]="p.bolt11.toUpperCase()" [label]="'pay.qr' | t" />
+          <div class="actions actions--center">
+            <a class="button button--primary" [href]="'lightning:' + p.bolt11" data-testid="open-wallet">{{ 'pay.openWallet' | t }}</a>
+            <button type="button" class="button" (click)="copy(p.bolt11)">{{ (copied() ? 'pay.copied' : 'pay.copy') | t }}</button>
+          </div>
+          <code class="pay__invoice">{{ p.bolt11 }}</code>
+        </div>
+      } @else if (p.method === 'onchain' && (p.bip21 || p.onchainAddress)) {
+        <div class="pay__box" data-testid="onchain">
+          <p>{{ 'pay.scanOnchain' | t: { amount: sats() } }}</p>
+          <app-qr [text]="p.bip21 ?? p.onchainAddress!" [label]="'pay.qrOnchain' | t" />
+          <div class="actions actions--center">
+            @if (p.bip21) {
+              <a class="button button--primary" [href]="p.bip21">{{ 'pay.openWallet' | t }}</a>
+            }
+            <button type="button" class="button" (click)="copy(p.onchainAddress ?? p.bip21!)">
+              {{ (copied() ? 'pay.copied' : 'pay.copyAddress') | t }}
+            </button>
+          </div>
+          <code class="pay__invoice">{{ p.onchainAddress }}</code>
+        </div>
+      } @else {
+        <div class="pay__box" data-testid="hosted">
+          <p>{{ 'pay.newTab' | t }}</p>
+          @if (p.hostedPaymentUrl) {
+            <a
+              class="button"
+              [class.button--primary]="popupBlocked()"
+              [href]="p.hostedPaymentUrl"
+              target="_blank"
+              rel="noopener"
+              data-testid="open-page"
+            >
+              {{ 'pay.openPage' | t }}
+            </a>
+          }
+        </div>
+      }
+      <p class="pay__status" role="status" aria-live="polite">{{ 'pay.waiting' | t }} · {{ 'pay.expiresIn' | t: { time: countdown() } }}</p>
+      <div class="actions actions--center">
+        @if (c.paymentMethods.length > 1) {
+          <button type="button" class="link-button" (click)="otherWay()" data-testid="other-way">{{ 'pay.otherWay' | t }}</button>
+        }
+        <button type="button" class="link-button" (click)="confirmCancel.set(true)" data-testid="cancel">{{ 'pay.cancel' | t }}</button>
+      </div>
+    } @else {
+      <div class="pay__box">
+        <p>{{ 'checkout.payWith' | t }}</p>
+        <div class="actions actions--center">
+          @for (m of c.paymentMethods; track m) {
+            <button type="button" class="button" (click)="pay(m)" [disabled]="busy()" [attr.data-testid]="'pay-' + m">
+              {{ 'checkout.method.' + m | t }}
+            </button>
+          }
+        </div>
+        @if (busy()) {
+          <p class="muted">{{ 'pay.starting' | t }}</p>
+        }
+      </div>
+      <div class="actions actions--center">
+        <button type="button" class="link-button" (click)="confirmCancel.set(true)">{{ 'pay.cancel' | t }}</button>
+      </div>
+    }
+
+    @if (confirmCancel()) {
+      <div class="confirm" role="alertdialog" aria-labelledby="cancel-title">
+        <h2 id="cancel-title">{{ 'pay.cancelTitle' | t }}</h2>
+        <p>{{ 'pay.cancelText' | t }}</p>
+        <div class="actions">
+          <button type="button" class="button" (click)="confirmCancel.set(false)">{{ 'pay.cancelNo' | t }}</button>
+          <button type="button" class="button button--danger" (click)="cancel()" data-testid="cancel-yes">{{ 'pay.cancelYes' | t }}</button>
+        </div>
+      </div>
+    }
+  } @else {
+    <p class="muted">{{ 'pay.none' | t }}</p>
+    <a class="button" routerLink="/cart">{{ 'pay.startAgain' | t }}</a>
+  }
+</div>

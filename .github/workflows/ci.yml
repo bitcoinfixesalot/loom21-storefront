@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Lint (types, i18n keys, formatting)
+        run: npm run lint
+      - name: Unit tests
+        run: npm test
+      - name: Build
+        run: npm run build
+      - name: Install Playwright's Chromium
+        run: npx playwright install --with-deps chromium
+      - name: End-to-end tests (mock Storefront API)
+        run: npm run e2e
+      - name: Lighthouse (home and product page)
+        run: |
+          node e2e/mock-api.mjs &
+          LOOM21_API_BASE=http://localhost:5179/storefront/v1 LOOM21_PUBLISHABLE_KEY=l21_pk_live_test \
+            LOOM21_SERVER_SECRET=l21_ss_test PUBLIC_BASE_URL=http://localhost:4100 PORT=4100 \
+            node dist/loom21-storefront/server/server.mjs &
+          npx wait-on@8.0.3 http://localhost:4100/healthz
+          npx @lhci/cli@0.15.1 autorun
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: test-results
+          path: |
+            test-results
+            .lighthouseci
+          retention-days: 7

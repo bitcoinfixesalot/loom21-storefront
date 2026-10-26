@@ -1,0 +1,1308 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "loom21 Storefront API",
+    "description": "The public API behind loom21 storefronts: catalog, quotes, checkouts and payments with a publishable key. See docs/STOREFRONT_API.md.",
+    "version": "v1"
+  },
+  "paths": {
+    "/storefront/v1/checkouts": {
+      "post": {
+        "tags": [
+          "StorefrontCheckouts"
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckoutRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckoutRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckoutRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/storefront/v1/checkouts/{token}/payments": {
+      "post": {
+        "tags": [
+          "StorefrontCheckouts"
+        ],
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaymentRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaymentRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaymentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/storefront/v1/checkouts/{token}": {
+      "get": {
+        "tags": [
+          "StorefrontCheckouts"
+        ],
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/storefront/v1/checkouts/{token}/cancel": {
+      "post": {
+        "tags": [
+          "StorefrontCheckouts"
+        ],
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutStatusResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/storefront/v1/products": {
+      "get": {
+        "tags": [
+          "StorefrontProducts"
+        ],
+        "parameters": [
+          {
+            "name": "category",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductSummaryResponsePagedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/storefront/v1/products/{idOrSlug}": {
+      "get": {
+        "tags": [
+          "StorefrontProducts"
+        ],
+        "parameters": [
+          {
+            "name": "idOrSlug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/storefront/v1/quotes": {
+      "post": {
+        "tags": [
+          "StorefrontQuotes"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuoteRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuoteRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuoteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuoteResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/storefront/v1/store": {
+      "get": {
+        "tags": [
+          "StorefrontStore"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoreResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/storefront/v1/categories": {
+      "get": {
+        "tags": [
+          "StorefrontStore"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CategoryResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/storefront/v1/sitemap": {
+      "get": {
+        "tags": [
+          "StorefrontStore"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SitemapResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/storefront/v1/pages": {
+      "get": {
+        "tags": [
+          "StorefrontStore"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PageSummaryResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/storefront/v1/pages/{type}": {
+      "get": {
+        "tags": [
+          "StorefrontStore"
+        ],
+        "parameters": [
+          {
+            "name": "type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AvailabilityResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "nullable": true
+          },
+          "quantity": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "maxQuantity": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "BtcRateResponse": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "number",
+            "format": "double"
+          },
+          "source": {
+            "type": "string",
+            "nullable": true
+          },
+          "asOf": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "BuyerAddressRequest": {
+        "required": [
+          "city",
+          "country",
+          "line1"
+        ],
+        "type": "object",
+        "properties": {
+          "line1": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "line2": {
+            "maxLength": 200,
+            "type": "string",
+            "nullable": true
+          },
+          "city": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          },
+          "region": {
+            "maxLength": 100,
+            "type": "string",
+            "nullable": true
+          },
+          "postcode": {
+            "maxLength": 20,
+            "type": "string",
+            "nullable": true
+          },
+          "country": {
+            "maxLength": 2,
+            "minLength": 2,
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "BuyerRequest": {
+        "required": [
+          "email"
+        ],
+        "type": "object",
+        "properties": {
+          "email": {
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string",
+            "format": "email"
+          },
+          "name": {
+            "maxLength": 200,
+            "type": "string",
+            "nullable": true
+          },
+          "phone": {
+            "maxLength": 50,
+            "type": "string",
+            "nullable": true
+          },
+          "shippingAddress": {
+            "$ref": "#/components/schemas/BuyerAddressRequest"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CartItemRequest": {
+        "type": "object",
+        "properties": {
+          "productId": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer",
+            "format": "int32"
+          },
+          "quantity": {
+            "maximum": 100000,
+            "minimum": 1,
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CategoryResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "pictureUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CheckoutRequest": {
+        "required": [
+          "buyer",
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "maxItems": 50,
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CartItemRequest"
+            }
+          },
+          "shippingMethodId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "buyer": {
+            "$ref": "#/components/schemas/BuyerRequest"
+          },
+          "note": {
+            "maxLength": 1000,
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CheckoutResponse": {
+        "type": "object",
+        "properties": {
+          "checkoutToken": {
+            "type": "string",
+            "nullable": true
+          },
+          "checkoutId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "nullable": true
+          },
+          "orderNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "total": {
+            "type": "number",
+            "format": "double"
+          },
+          "currency": {
+            "type": "string",
+            "nullable": true
+          },
+          "paymentMethods": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CheckoutStatusResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "nullable": true
+          },
+          "orderNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "paidAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "method": {
+            "type": "string",
+            "nullable": true
+          },
+          "total": {
+            "type": "number",
+            "format": "double"
+          },
+          "currency": {
+            "type": "string",
+            "nullable": true
+          },
+          "buyerEmail": {
+            "type": "string",
+            "nullable": true
+          },
+          "receiptUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "hostedPaymentUrl": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CustomFieldResponse": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "label": {
+            "type": "string",
+            "nullable": true
+          },
+          "value": {
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "PageResponse": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "bodyMarkdown": {
+            "type": "string",
+            "nullable": true
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PageSummaryResponse": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PaymentRequest": {
+        "required": [
+          "method"
+        ],
+        "type": "object",
+        "properties": {
+          "method": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PaymentResponse": {
+        "type": "object",
+        "properties": {
+          "paymentId": {
+            "type": "string",
+            "nullable": true
+          },
+          "method": {
+            "type": "string",
+            "nullable": true
+          },
+          "processor": {
+            "type": "string",
+            "nullable": true
+          },
+          "amountSats": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
+          "bolt11": {
+            "type": "string",
+            "nullable": true
+          },
+          "onchainAddress": {
+            "type": "string",
+            "nullable": true
+          },
+          "bip21": {
+            "type": "string",
+            "nullable": true
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "hostedPaymentUrl": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "PriceTierResponse": {
+        "type": "object",
+        "properties": {
+          "minQuantity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "unitPrice": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ProductImageResponse": {
+        "type": "object",
+        "properties": {
+          "thumb": {
+            "type": "string",
+            "nullable": true
+          },
+          "normal": {
+            "type": "string",
+            "nullable": true
+          },
+          "large": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ProductResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "slug": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "categoryId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "category": {
+            "type": "string",
+            "nullable": true
+          },
+          "brand": {
+            "type": "string",
+            "nullable": true
+          },
+          "model": {
+            "type": "string",
+            "nullable": true
+          },
+          "measure": {
+            "type": "string",
+            "nullable": true
+          },
+          "isService": {
+            "type": "boolean"
+          },
+          "price": {
+            "type": "number",
+            "format": "double"
+          },
+          "priceSats": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
+          "currency": {
+            "type": "string",
+            "nullable": true
+          },
+          "priceTiers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PriceTierResponse"
+            },
+            "nullable": true
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductImageResponse"
+            },
+            "nullable": true
+          },
+          "customFields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CustomFieldResponse"
+            },
+            "nullable": true
+          },
+          "availability": {
+            "$ref": "#/components/schemas/AvailabilityResponse"
+          },
+          "code": {
+            "type": "string",
+            "nullable": true
+          },
+          "publicDescription": {
+            "type": "string",
+            "nullable": true
+          },
+          "categorySlug": {
+            "type": "string",
+            "nullable": true
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ProductSummaryResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "slug": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "categoryId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "brand": {
+            "type": "string",
+            "nullable": true
+          },
+          "measure": {
+            "type": "string",
+            "nullable": true
+          },
+          "isService": {
+            "type": "boolean"
+          },
+          "price": {
+            "type": "number",
+            "format": "double"
+          },
+          "priceSats": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
+          "currency": {
+            "type": "string",
+            "nullable": true
+          },
+          "image": {
+            "$ref": "#/components/schemas/ProductImageResponse"
+          },
+          "availability": {
+            "$ref": "#/components/schemas/AvailabilityResponse"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ProductSummaryResponsePagedResponse": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductSummaryResponse"
+            },
+            "nullable": true
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "QuoteLineResponse": {
+        "type": "object",
+        "properties": {
+          "productId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "quantity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "unitPrice": {
+            "type": "number",
+            "format": "double"
+          },
+          "lineTotal": {
+            "type": "number",
+            "format": "double"
+          },
+          "priceSource": {
+            "type": "string",
+            "nullable": true
+          },
+          "availability": {
+            "type": "string",
+            "nullable": true
+          },
+          "maxQuantity": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "QuoteRequest": {
+        "required": [
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "maxItems": 50,
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CartItemRequest"
+            }
+          },
+          "shippingMethodId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "QuoteResponse": {
+        "type": "object",
+        "properties": {
+          "currency": {
+            "type": "string",
+            "nullable": true
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuoteLineResponse"
+            },
+            "nullable": true
+          },
+          "subtotal": {
+            "type": "number",
+            "format": "double"
+          },
+          "shipping": {
+            "type": "number",
+            "format": "double"
+          },
+          "vat": {
+            "$ref": "#/components/schemas/QuoteVatResponse"
+          },
+          "total": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalSats": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
+          "btcRate": {
+            "$ref": "#/components/schemas/BtcRateResponse"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuoteWarningResponse"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "QuoteVatResponse": {
+        "type": "object",
+        "properties": {
+          "rate": {
+            "type": "number",
+            "format": "double"
+          },
+          "amount": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false
+      },
+      "QuoteWarningResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "nullable": true
+          },
+          "productId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ShippingMethodResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "price": {
+            "type": "number",
+            "format": "double"
+          },
+          "requiresAddress": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SitemapEntryResponse": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "nullable": true
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SitemapResponse": {
+        "type": "object",
+        "properties": {
+          "categories": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SitemapEntryResponse"
+            },
+            "nullable": true
+          },
+          "products": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SitemapEntryResponse"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "StoreBitcoinResponse": {
+        "type": "object",
+        "properties": {
+          "hidePrices": {
+            "type": "boolean"
+          },
+          "bitcoinOnly": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "StoreResponse": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "logoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "supportEmail": {
+            "type": "string",
+            "nullable": true
+          },
+          "currency": {
+            "type": "string",
+            "nullable": true
+          },
+          "paymentMethods": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "shippingMethods": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShippingMethodResponse"
+            },
+            "nullable": true
+          },
+          "bitcoin": {
+            "$ref": "#/components/schemas/StoreBitcoinResponse"
+          },
+          "vat": {
+            "$ref": "#/components/schemas/StoreVatResponse"
+          },
+          "stockDisplay": {
+            "type": "string",
+            "nullable": true
+          },
+          "checkoutAvailable": {
+            "type": "boolean"
+          },
+          "showPoweredBy": {
+            "type": "boolean"
+          },
+          "language": {
+            "type": "string",
+            "nullable": true
+          },
+          "seoTitle": {
+            "type": "string",
+            "nullable": true
+          },
+          "seoDescription": {
+            "type": "string",
+            "nullable": true
+          },
+          "accentColor": {
+            "type": "string",
+            "nullable": true
+          },
+          "socialLinks": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "footerText": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "StoreVatResponse": {
+        "type": "object",
+        "properties": {
+          "charged": {
+            "type": "boolean"
+          },
+          "rate": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "securitySchemes": {
+      "StorefrontKey": {
+        "type": "apiKey",
+        "description": "A publishable key (l21_pk_live_…) from Settings → Storefronts → Developer.",
+        "name": "Loom21-Publishable-Key",
+        "in": "header"
+      },
+      "Bearer": {
+        "type": "http",
+        "description": "JWT Authorization header using the Bearer scheme.",
+        "scheme": "Bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "security": [
+    {
+      "StorefrontKey": [ ]
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+# Hosted mode (Phase 1b, reference only: hosted mode isn't built yet). One storefront deployment serves every
+# merchant's store on {slug}.loom21.shop and on their verified custom domains.
+{
+	on_demand_tls {
+		# 200 only for a verified domain of an enabled storefront (loom21's internal network).
+		ask http://api:8080/internal/storefront-domains/allowed
+	}
+}
+
+# All merchant subdomains: one wildcard certificate via DNS-01 (a Caddy build with the DNS provider's plugin, e.g.
+# caddy-dns/hetzner). One certificate per subdomain would soon hit Let's Encrypt's per-domain rate limits.
+*.loom21.shop {
+	tls {
+		dns hetzner {env.HETZNER_DNS_TOKEN}
+	}
+	encode zstd gzip
+	reverse_proxy storefront:4000
+}
+
+# Verified custom domains: a certificate on the first request, only if "ask" says yes.
+https:// {
+	tls {
+		on_demand
+	}
+	encode zstd gzip
+	reverse_proxy storefront:4000
+}

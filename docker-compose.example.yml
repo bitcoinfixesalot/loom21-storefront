@@ -1,0 +1,28 @@
+# Single mode: your store and Caddy (automatic HTTPS). Copy to docker-compose.yml, set .env and the domain in
+# deploy/single/Caddyfile, then: docker compose up -d
+services:
+  storefront:
+    image: ghcr.io/bitcoinfixesalot/loom21-storefront:latest
+    # or build it yourself: build: .
+    env_file: .env
+    environment:
+      TRUST_PROXY: 'true'
+      PORT: '4000'
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2.10-alpine
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./deploy/single/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - storefront
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:

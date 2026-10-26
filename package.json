@@ -1,0 +1,57 @@
+{
+  "name": "loom21-storefront",
+  "version": "0.1.0",
+  "description": "An open-source online store on the public Loom21 Storefront API: server-rendered catalog, cart, and checkout with Bitcoin (Lightning, on-chain) and card.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bitcoinfixesalot/loom21-storefront.git"
+  },
+  "private": true,
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "ng": "ng",
+    "start": "ng serve",
+    "build": "ng build",
+    "watch": "ng build --watch --configuration development",
+    "serve": "node --env-file-if-exists=.env dist/loom21-storefront/server/server.mjs",
+    "test": "ng test --watch=false",
+    "e2e": "playwright test",
+    "lint": "tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.spec.json --noEmit && node scripts/check-i18n.mjs && prettier --check \"src/**/*.{ts,html,scss,json}\" \"e2e/**/*.{ts,mjs}\" \"scripts/**/*.mjs\"",
+    "format": "prettier --write \"src/**/*.{ts,html,scss,json}\" \"e2e/**/*.{ts,mjs}\" \"scripts/**/*.mjs\"",
+    "api:fetch": "node scripts/fetch-openapi.mjs",
+    "api:types": "openapi-typescript openapi/storefront-v1.json -o src/app/core/api/schema.d.ts",
+    "mock-api": "node e2e/mock-api.mjs",
+    "lighthouse": "npx @lhci/cli@0.15.1 autorun"
+  },
+  "dependencies": {
+    "@angular/common": "21.2.25",
+    "@angular/compiler": "21.2.25",
+    "@angular/core": "21.2.25",
+    "@angular/forms": "21.2.25",
+    "@angular/platform-browser": "21.2.25",
+    "@angular/platform-server": "21.2.25",
+    "@angular/router": "21.2.25",
+    "@angular/ssr": "21.2.28",
+    "express": "5.3.0",
+    "marked": "16.4.2",
+    "rxjs": "7.8.2",
+    "tslib": "2.8.1"
+  },
+  "devDependencies": {
+    "@angular/build": "21.2.28",
+    "@angular/cli": "21.2.28",
+    "@angular/compiler-cli": "21.2.25",
+    "@playwright/test": "1.64.0",
+    "@types/express": "5.0.6",
+    "@types/node": "22.20.5",
+    "jsdom": "28.1.0",
+    "jsqr": "1.4.0",
+    "openapi-typescript": "7.13.0",
+    "prettier": "3.8.1",
+    "typescript": "5.9.3",
+    "vitest": "4.1.11"
+  }
+}
