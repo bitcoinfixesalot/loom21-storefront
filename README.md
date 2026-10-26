@@ -25,13 +25,13 @@ Or without Compose: `docker run --env-file .env -p 4000:4000 ghcr.io/bitcoinfixe
 
 | Variable | Default | |
 |---|---|---|
-| `STOREFRONT_MODE` | `single` | One store from the key below. `hosted` (loom21's multi-store mode) comes with Phase 1b. |
+| `STOREFRONT_MODE` | `single` | One store from the key below. `hosted` is loom21's own multi-store deployment (below). |
 | `LOOM21_API_BASE` | `https://app.loom21.com/storefront/v1` | The Storefront API. |
 | `LOOM21_PUBLISHABLE_KEY` | required | `l21_pk_live_…` from the storefront's Developer tab. Public by design: browsers send it. |
 | `LOOM21_SERVER_SECRET` | strongly recommended | `l21_ss_…`. **Server only, never sent to a browser.** See below. |
 | `PUBLIC_BASE_URL` | required | Your store's address, for canonical URLs and `sitemap.xml`. |
 | `HTML_CACHE_SECONDS` | `30` | How long catalog pages are cached in memory (0 = off). |
-| `TRUST_PROXY` | `false` | `true` behind Caddy or another proxy, so the shopper's IP comes from `X-Forwarded-For`. |
+| `TRUST_PROXY` | `false` | Behind proxies, so the shopper's IP comes from `X-Forwarded-For`: `true` behind one proxy you control (Caddy), or the number of proxies in front (`2` behind Cloudflare and Azure's ingress), so a shopper can't fake their IP. |
 | `PORT` | `4000` | |
 
 **Why the server secret.** The store renders its pages on your server, so every catalog request reaches the API from your server's IP, and the API's per-IP limit (120 reads a minute) would throttle your whole store as if it were one shopper. With the secret, the server also sends each shopper's IP (`Loom21-Client-IP`), and the API counts shoppers instead. The API refuses a wrong secret (401 `invalid_server_secret`), so a typo shows up at once. Browsers never see it: it isn't in the pages or the scripts (the tests check), and the API doesn't let a browser send it.
@@ -54,6 +54,10 @@ Paying works like the [Buy button](https://github.com/bitcoinfixesalot/loom21-bu
 
 A storefront that is turned off (or whose key was revoked) gets a neutral "isn't taking orders" page with status 503.
 
+## Hosted mode
+
+loom21 runs this same code for every merchant (`STOREFRONT_MODE=hosted`): one deployment, the store chosen by the request's host, on `{label}.loom21.shop` and on custom domains merchants verify in Settings → Storefronts → Domains. The host is looked up through loom21's internal endpoint with a platform secret (`LOOM21_HOST_SECRET`, `LOOM21_INTERNAL_API_BASE`), cached for 5 minutes. How it's deployed: [deploy/hosted/README.md](deploy/hosted/README.md).
+
 ## Run it locally
 
 Against the mock API in this repo (no Loom21 account needed):
@@ -74,7 +78,7 @@ For development with live reload: `npm start`, with the same variables set in yo
 
 - `npm run lint`: types, the English and Bulgarian texts have the same keys, formatting.
 - `npm test`: unit tests (Vitest).
-- `npm run build && npm run e2e`: Playwright against the mock API. It starts the mock and two stores (English on 4100, Bulgarian on 4101).
+- `npm run build && npm run e2e`: Playwright against the mock API. It starts the mock and three store servers: English on 4100, Bulgarian on 4101, and hosted mode on 4102 (stores at `bees.localhost:4102`, `pchelin.localhost:4102`).
 - `npm run lighthouse`: performance, SEO and accessibility of the home and product pages, with the mock and a store running on port 4100.
 
 ## The API's types

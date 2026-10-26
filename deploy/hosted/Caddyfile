@@ -1,9 +1,10 @@
-# Hosted mode (Phase 1b, reference only: hosted mode isn't built yet). One storefront deployment serves every
-# merchant's store on {slug}.loom21.shop and on their verified custom domains.
+# Hosted mode with Caddy instead of Cloudflare for SaaS (see README.md here; loom21 itself runs the Cloudflare setup).
+# One storefront deployment serves every merchant's store on {label}.loom21.shop and their verified custom domains.
+# Caddy, the storefront and loom21's internal port (8081) must share a private network.
 {
 	on_demand_tls {
 		# 200 only for a verified domain of an enabled storefront (loom21's internal network).
-		ask http://api:8080/internal/storefront-domains/allowed
+		ask http://api:8081/internal/storefront-domains/allowed
 	}
 }
 

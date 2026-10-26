@@ -81,15 +81,97 @@ export class SingleTenantResolver implements TenantResolver {
   }
 }
 
-/** Phase 1b: hosted mode resolves the host through loom21's internal endpoint. Not built yet. */
-export class HostedTenantResolver implements TenantResolver {
-  constructor(private readonly env: StorefrontEnv) {}
+/** loom21's internal host lookup (GET /internal/storefront-hosts/{hostname}). */
+interface HostAnswer {
+  storefrontId: number;
+  publishableKey: string | null;
+  language: string;
+  isEnabled: boolean;
+}
 
-  resolve(): Promise<ResolvedTenant | null> {
-    throw new Error(`Hosted mode (STOREFRONT_MODE=hosted) is not built yet; it comes with Phase 1b. Use single mode. (${this.env.mode})`);
+const HOSTED_MAX_ENTRIES = 1000;
+const HOSTED_MISS_MS = 30_000;
+
+/**
+ * Hosted mode (loom21's own deployment): the store is the request's host, looked up through loom21's internal endpoint
+ * with the platform's host secret, and cached for 5 minutes (an unknown host for 30 seconds). A storefront turned off or
+ * a domain removed takes at most that long to stop being served. The host secret is also the server secret of every
+ * store's server-side API calls, so the API counts shoppers' IPs.
+ */
+export class HostedTenantResolver implements TenantResolver {
+  private readonly cache = new Map<string, { value: ResolvedTenant | null; until: number }>();
+  private readonly pending = new Map<string, Promise<ResolvedTenant | null>>();
+
+  constructor(
+    private readonly env: StorefrontEnv,
+    private readonly fetchFn: Fetch = fetch,
+    private readonly now: () => number = Date.now,
+  ) {}
+
+  resolve(host: string): Promise<ResolvedTenant | null> {
+    const hostname = (host ?? '').trim().toLowerCase().replace(/\.$/, '');
+    if (!/^[a-z0-9.-]{1,253}$/.test(hostname)) return Promise.resolve(null);
+    const hit = this.cache.get(hostname);
+    if (hit && hit.until > this.now()) {
+      // Most recently used goes last, so the oldest is dropped first.
+      this.cache.delete(hostname);
+      this.cache.set(hostname, hit);
+      return Promise.resolve(hit.value);
+    }
+    let pending = this.pending.get(hostname);
+    if (!pending) {
+      pending = this.load(hostname, hit?.value ?? null).finally(() => this.pending.delete(hostname));
+      this.pending.set(hostname, pending);
+    }
+    return pending;
+  }
+
+  private remember(hostname: string, value: ResolvedTenant | null, ms: number): ResolvedTenant | null {
+    this.cache.delete(hostname);
+    this.cache.set(hostname, { value, until: this.now() + ms });
+    while (this.cache.size > HOSTED_MAX_ENTRIES) this.cache.delete(this.cache.keys().next().value!);
+    return value;
+  }
+
+  private async load(hostname: string, stale: ResolvedTenant | null): Promise<ResolvedTenant | null> {
+    let response: Response;
+    try {
+      response = await this.fetchFn(`${this.env.internalApiBase}/internal/storefront-hosts/${encodeURIComponent(hostname)}`, {
+        headers: { 'Loom21-Host-Secret': this.env.hostSecret!, Accept: 'application/json' },
+        signal: AbortSignal.timeout(5000),
+      });
+    } catch (e) {
+      // loom21 is unreachable: keep serving what we knew.
+      console.error(`Loom21 storefront: host lookup for ${hostname} failed.`, e);
+      if (stale) return stale;
+      throw e;
+    }
+    if (response.status === 404) return this.remember(hostname, null, HOSTED_MISS_MS);
+    if (!response.ok) {
+      console.error(`Loom21 storefront: host lookup for ${hostname} answered ${response.status}.`);
+      if (stale) return stale;
+      throw new Error(`Host lookup answered ${response.status}`);
+    }
+    const answer = (await response.json()) as HostAnswer;
+    if (!answer.isEnabled || !answer.publishableKey) return this.remember(hostname, null, HOSTED_MISS_MS);
+    return this.remember(
+      hostname,
+      {
+        tenant: {
+          // The storefront, not its key: rolling the key keeps the shoppers' carts.
+          id: tenantId(`storefront-${answer.storefrontId}`),
+          publishableKey: answer.publishableKey,
+          apiBase: this.env.apiBase,
+          language: answer.language === 'bg' ? 'bg' : 'en',
+          baseUrl: `https://${hostname}`,
+        },
+        serverSecret: this.env.hostSecret,
+      },
+      CACHE_MS,
+    );
   }
 }
 
 export function createTenantResolver(env: StorefrontEnv, fetchFn: Fetch = fetch): TenantResolver {
-  return env.mode === 'hosted' ? new HostedTenantResolver(env) : new SingleTenantResolver(env, fetchFn);
+  return env.mode === 'hosted' ? new HostedTenantResolver(env, fetchFn) : new SingleTenantResolver(env, fetchFn);
 }

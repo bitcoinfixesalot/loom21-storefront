@@ -18,8 +18,20 @@ export interface StorefrontEnv {
   hostSecret: string | null;
   internalApiBase: string | null;
   htmlCacheSeconds: number;
-  trustProxy: boolean;
+  /**
+   * Behind proxies: true trusts every X-Forwarded-For hop (one proxy you control, like Caddy); a number trusts that many
+   * hops from this server (2 behind Cloudflare and Azure's ingress), so a shopper can't fake their IP with their own
+   * X-Forwarded-For header. false: the connection's address.
+   */
+  trustProxy: boolean | number;
   port: number;
+}
+
+function trustProxy(value: string | undefined): boolean | number {
+  const text = (value ?? '').trim().toLowerCase();
+  if (text === 'true') return true;
+  const hops = Number(text);
+  return text !== '' && Number.isInteger(hops) && hops > 0 ? hops : false;
 }
 
 export class EnvError extends Error {}
@@ -50,7 +62,7 @@ export function readEnv(env: Record<string, string | undefined> = process.env): 
     hostSecret: env['LOOM21_HOST_SECRET']?.trim() || null,
     internalApiBase: httpUrl('LOOM21_INTERNAL_API_BASE', env['LOOM21_INTERNAL_API_BASE']),
     htmlCacheSeconds: Math.max(0, Number(env['HTML_CACHE_SECONDS'] ?? 30) || 0),
-    trustProxy: (env['TRUST_PROXY'] ?? '').trim().toLowerCase() === 'true',
+    trustProxy: trustProxy(env['TRUST_PROXY']),
     port: Number(env['PORT']) || 4000,
   };
 
@@ -60,6 +72,10 @@ export function readEnv(env: Record<string, string | undefined> = process.env): 
     if (!result.publicBaseUrl) throw new EnvError('PUBLIC_BASE_URL is required in single mode, e.g. https://shop.example.com.');
     if (result.serverSecret && !result.serverSecret.startsWith('l21_ss_'))
       throw new EnvError('LOOM21_SERVER_SECRET must start with l21_ss_ (Settings → Storefronts → Developer → Server secret).');
+  } else {
+    if (!result.hostSecret) throw new EnvError('LOOM21_HOST_SECRET is required in hosted mode (StorefrontHosting:HostSecret in loom21).');
+    if (!result.internalApiBase)
+      throw new EnvError("LOOM21_INTERNAL_API_BASE is required in hosted mode: loom21's internal port, e.g. http://loom21-api:8081.");
   }
   return result;
 }

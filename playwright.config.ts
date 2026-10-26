@@ -2,8 +2,8 @@ import { defineConfig, devices } from '@playwright/test';
 
 /**
  * End-to-end tests against the built store (npm run build first) and the mock Storefront API (e2e/mock-api.mjs).
- * Two store servers: English on 4100 (no page cache, so tests that change the shop see it at once) and Bulgarian on
- * 4101 (with the 30-second page cache).
+ * Three store servers: English on 4100 (no page cache, so tests that change the shop see it at once), Bulgarian on
+ * 4101 (with the 30-second page cache), and hosted mode on 4102, which serves whichever store a *.localhost host is.
  */
 const api = 'http://localhost:5179/storefront/v1';
 const store = (port: number, key: string, cacheSeconds: number) => ({
@@ -33,5 +33,19 @@ export default defineConfig({
     { command: 'node e2e/mock-api.mjs', url: 'http://localhost:5179/__test/log', reuseExistingServer: !process.env['CI'], timeout: 30_000 },
     store(4100, 'l21_pk_live_test', 0),
     store(4101, 'l21_pk_live_bg', 30),
+    {
+      command: 'node dist/loom21-storefront/server/server.mjs',
+      url: 'http://localhost:4102/healthz',
+      reuseExistingServer: !process.env['CI'],
+      timeout: 60_000,
+      env: {
+        STOREFRONT_MODE: 'hosted',
+        LOOM21_API_BASE: api,
+        LOOM21_HOST_SECRET: 'host-secret-test',
+        LOOM21_INTERNAL_API_BASE: 'http://localhost:5179',
+        HTML_CACHE_SECONDS: '0',
+        PORT: '4102',
+      },
+    },
   ],
 });

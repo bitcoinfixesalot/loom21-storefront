@@ -6,6 +6,8 @@
 //   POST /__test/reset     forget requests, checkouts and overrides
 //   POST /__test/config    { storeDisabled, checkoutAvailable, language, bitcoinOnly, hidePrices, stock: { [id]: n } }
 //   POST /__test/pay       pays every open checkout
+// loom21's internal host lookup for hosted mode (on the same port here; loom21 serves it on its internal port only):
+//   GET  /internal/storefront-hosts/{hostname}   needs Loom21-Host-Secret
 import { createServer } from 'node:http';
 import { randomUUID } from 'node:crypto';
 
@@ -14,6 +16,16 @@ const KEY = process.env.MOCK_API_KEY || 'l21_pk_live_test';
 // A second store on the same API, in Bulgarian (the tests run a second store server with it).
 const BG_KEY = 'l21_pk_live_bg';
 const SECRET = process.env.MOCK_API_SECRET || 'l21_ss_test';
+// The platform's host secret (hosted mode): the host lookup needs it, and the API takes it as any store's server secret.
+const HOST_SECRET = 'host-secret-test';
+// The hosts of the hosted stores (*.localhost resolves to this machine in browsers).
+const HOSTS = {
+  'bees.localhost': { storefrontId: 1, publishableKey: KEY, language: 'en', isEnabled: true },
+  'pchelin.localhost': { storefrontId: 2, publishableKey: BG_KEY, language: 'bg', isEnabled: true },
+  'closed.localhost': { storefrontId: 3, publishableKey: KEY, language: 'en', isEnabled: false },
+  // Looked up by one test only, so the store server hasn't cached it.
+  'fresh.localhost': { storefrontId: 1, publishableKey: KEY, language: 'en', isEnabled: true },
+};
 const BASE = '/storefront/v1';
 const now = '2026-10-20T10:00:00Z';
 
@@ -338,6 +350,14 @@ const server = createServer(async (req, res) => {
     return send(res, 404, { error: 'unknown test control' });
   }
 
+  let host;
+  if (req.method === 'GET' && (host = path.match(/^\/internal\/storefront-hosts\/([^/]+)$/))) {
+    state.log.push({ method: 'GET', path, key: null, secret: req.headers['loom21-host-secret'] ?? null, clientIp: null, origin: null });
+    if (req.headers['loom21-host-secret'] !== HOST_SECRET) return send(res, 404, {});
+    const found = HOSTS[decodeURIComponent(host[1]).toLowerCase()];
+    return found ? send(res, 200, found) : send(res, 404, {});
+  }
+
   if (!path.startsWith(BASE)) return send(res, 404, { error: 'not the storefront API' });
   const route = path.slice(BASE.length) || '/';
   state.log.push({
@@ -352,8 +372,8 @@ const server = createServer(async (req, res) => {
   const key = req.headers['loom21-publishable-key'];
   if ((key !== KEY && key !== BG_KEY) || state.config.storeDisabled) return problem(res, 401, 'invalid_key');
   state.language = key === BG_KEY ? 'bg' : state.config.language;
-  if (req.headers['loom21-server-secret'] && req.headers['loom21-server-secret'] !== SECRET)
-    return problem(res, 401, 'invalid_server_secret');
+  const serverSecret = req.headers['loom21-server-secret'];
+  if (serverSecret && serverSecret !== SECRET && serverSecret !== HOST_SECRET) return problem(res, 401, 'invalid_server_secret');
 
   let m;
   if (req.method === 'GET' && route === '/store') return send(res, 200, store());

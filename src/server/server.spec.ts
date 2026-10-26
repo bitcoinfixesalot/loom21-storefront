@@ -2,7 +2,7 @@ import { EnvError, readEnv } from './env';
 import { HtmlCache, isCacheable } from './html-cache';
 import { robotsTxt, sitemapXml } from './sitemap';
 import { withTenant } from './tenant-tag';
-import { SingleTenantResolver, tenantId } from './tenant-resolver';
+import { HostedTenantResolver, SingleTenantResolver, tenantId } from './tenant-resolver';
 import type { Tenant } from '../app/core/tenant/tenant';
 
 const single = {
@@ -20,6 +20,13 @@ describe('readEnv', () => {
     expect(env.serverSecret).toBe('l21_ss_x');
     expect(env.trustProxy).toBe(true);
     expect(env.htmlCacheSeconds).toBe(0);
+  });
+
+  it('trusts proxies by hop count, or all of them, or none', () => {
+    expect(readEnv({ ...single, TRUST_PROXY: '2' }).trustProxy).toBe(2);
+    expect(readEnv({ ...single, TRUST_PROXY: 'true' }).trustProxy).toBe(true);
+    expect(readEnv({ ...single, TRUST_PROXY: '0' }).trustProxy).toBe(false);
+    expect(readEnv({ ...single }).trustProxy).toBe(false);
   });
 
   it('refuses a single mode without a key or base URL, and a secret that is not one', () => {
@@ -137,5 +144,86 @@ describe('robots.txt and sitemap.xml', () => {
   it('escapes addresses and shortens dates', () => {
     const xml = sitemapXml('https://shop', [{ path: '/p/a&b', lastmod: '2026-10-20T10:00:00Z' }]);
     expect(xml).toContain('<loc>https://shop/p/a&amp;b</loc><lastmod>2026-10-20</lastmod>');
+  });
+});
+
+describe('HostedTenantResolver', () => {
+  const hosted = readEnv({
+    STOREFRONT_MODE: 'hosted',
+    LOOM21_HOST_SECRET: 'host-secret',
+    LOOM21_INTERNAL_API_BASE: 'http://loom21-api:8081',
+    LOOM21_API_BASE: 'https://app.loom21.com/storefront/v1',
+  });
+
+  function lookups(answers: Record<string, { status: number; body?: object } | 'down'>) {
+    const calls: { url: string; secret: string | undefined }[] = [];
+    const fetchFn = (async (url: string, init: RequestInit) => {
+      calls.push({ url, secret: (init.headers as Record<string, string>)['Loom21-Host-Secret'] });
+      const host = decodeURIComponent(url.split('/').pop()!);
+      const answer = answers[host] ?? { status: 404 };
+      if (answer === 'down') throw new TypeError('fetch failed');
+      return new Response(JSON.stringify(answer.body ?? {}), { status: answer.status });
+    }) as unknown as typeof fetch;
+    return { calls, fetchFn };
+  }
+
+  const bees = { status: 200, body: { storefrontId: 7, publishableKey: 'l21_pk_live_bees', language: 'bg', isEnabled: true } };
+
+  it('needs the host secret and the internal address', () => {
+    expect(() => readEnv({ STOREFRONT_MODE: 'hosted', LOOM21_INTERNAL_API_BASE: 'http://x:8081' })).toThrow(/LOOM21_HOST_SECRET/);
+    expect(() => readEnv({ STOREFRONT_MODE: 'hosted', LOOM21_HOST_SECRET: 's' })).toThrow(/LOOM21_INTERNAL_API_BASE/);
+  });
+
+  it('looks a host up with the host secret, caches it, and keeps the secret out of the tenant', async () => {
+    const { calls, fetchFn } = lookups({ 'shop.bees.example': bees });
+    const resolver = new HostedTenantResolver(hosted, fetchFn);
+
+    const first = await resolver.resolve('Shop.Bees.Example');
+    await resolver.resolve('shop.bees.example');
+
+    expect(calls.length).toBe(1);
+    expect(calls[0].url).toBe('http://loom21-api:8081/internal/storefront-hosts/shop.bees.example');
+    expect(calls[0].secret).toBe('host-secret');
+    expect(first?.tenant).toEqual({
+      id: tenantId('storefront-7'),
+      publishableKey: 'l21_pk_live_bees',
+      apiBase: 'https://app.loom21.com/storefront/v1',
+      language: 'bg',
+      baseUrl: 'https://shop.bees.example',
+    });
+    expect(JSON.stringify(first?.tenant)).not.toContain('host-secret');
+    expect(first?.serverSecret).toBe('host-secret'); // its server-side API calls send it
+  });
+
+  it('an unknown host or a turned-off store is no store, asked again after 30 seconds', async () => {
+    let t = 0;
+    const answers: Record<string, { status: number; body?: object }> = {
+      'off.example': { status: 200, body: { storefrontId: 8, publishableKey: 'l21_pk_live_x', language: 'en', isEnabled: false } },
+    };
+    const { calls, fetchFn } = lookups(answers);
+    const resolver = new HostedTenantResolver(hosted, fetchFn, () => t);
+
+    expect(await resolver.resolve('nobody.example')).toBeNull();
+    expect(await resolver.resolve('off.example')).toBeNull();
+    expect(await resolver.resolve('nobody.example')).toBeNull();
+    expect(calls.length).toBe(2);
+    answers['nobody.example'] = bees;
+    t = 31_000;
+    expect(await resolver.resolve('nobody.example')).not.toBeNull();
+    expect(await resolver.resolve('bad host!')).toBeNull(); // never looked up
+    expect(calls.length).toBe(3);
+  });
+
+  it('keeps serving a known store when loom21 is unreachable', async () => {
+    let t = 0;
+    const answers: Record<string, { status: number; body?: object } | 'down'> = { 'shop.bees.example': bees };
+    const { fetchFn } = lookups(answers);
+    const resolver = new HostedTenantResolver(hosted, fetchFn, () => t);
+    await resolver.resolve('shop.bees.example');
+
+    answers['shop.bees.example'] = 'down';
+    t = 6 * 60_000;
+    expect((await resolver.resolve('shop.bees.example'))?.tenant.publishableKey).toBe('l21_pk_live_bees');
+    await expect(resolver.resolve('new.example')).resolves.toBeNull(); // 404 from the fake
   });
 });

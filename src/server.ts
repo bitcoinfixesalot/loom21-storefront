@@ -16,8 +16,13 @@ export interface StoreServerDeps {
   fetchFn?: typeof fetch;
 }
 
-/** The hosts the Angular engine renders for: the store's own, plus localhost for running it locally. */
+/**
+ * The hosts the Angular engine renders for: in single mode the store's own, plus localhost for running it locally. In
+ * hosted mode any host: stores' domains aren't known in advance, and the host lookup (a 404 for an unknown host) runs
+ * before Angular is reached.
+ */
 function allowedHosts(env: StorefrontEnv): string[] {
+  if (env.mode === 'hosted') return ['*'];
   const hosts = ['localhost', '127.0.0.1'];
   if (env.publicBaseUrl) hosts.push(new URL(env.publicBaseUrl).hostname);
   return hosts;
@@ -33,7 +38,7 @@ export function createStoreServer({ env, resolver = createTenantResolver(env), f
   // Behind Caddy or another proxy: req.ip is the shopper's (X-Forwarded-For), which the API's per-IP limits count.
   app.set('trust proxy', env.trustProxy);
 
-  const angularApp = new AngularNodeAppEngine({ allowedHosts: allowedHosts(env), trustProxyHeaders: env.trustProxy });
+  const angularApp = new AngularNodeAppEngine({ allowedHosts: allowedHosts(env), trustProxyHeaders: env.trustProxy !== false });
   const htmlCache = new HtmlCache(env.htmlCacheSeconds);
   const sitemaps = new SitemapBuilder(fetchFn);
 
